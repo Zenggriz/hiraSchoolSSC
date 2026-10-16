@@ -234,17 +234,23 @@ const MANAGEMENT_CONTACTS = [
   { name: 'Muhammad Haseeb ur Rehman', role: 'Branch Manager', number: '03178532050' },
 ];
 
-const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:3000')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = new Set([
+  'https://hiraschoolssc.com',
+  'https://www.hiraschoolssc.com',
+  ...(process.env.FRONTEND_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+]);
 
 app.set('trust proxy', 1);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
     return callback(new Error('Origin is not allowed by CORS'));
   },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '32kb' }));
 
