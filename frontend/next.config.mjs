@@ -2,17 +2,8 @@
 const nextConfig = {
   /* config options here */
   experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
+    // If you are testing standard incremental partial prefetching
+    ppr: true, 
   },
 };
 
