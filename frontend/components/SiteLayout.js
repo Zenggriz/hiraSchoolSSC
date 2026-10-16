@@ -5,7 +5,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { API_URL } from '../lib/api';
+import { API_URL, getApiErrorMessage } from '../lib/api';
 
 const DEFAULT_SETTINGS = {
   liveLocation: 'https://maps.app.goo.gl/TFA4UbDuUjqmPwWf6',
@@ -199,7 +199,7 @@ export default function SiteLayout({ children }) {
         setSettings({
           ...DEFAULT_SETTINGS,
           loaded: true,
-          error: error.response?.data?.message || 'Website content could not be loaded.',
+          error: getApiErrorMessage(error, 'Website content could not be loaded.'),
         });
       });
 

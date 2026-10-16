@@ -248,6 +248,19 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '32kb' }));
 
+app.get('/api/health', (req, res) => {
+  // Health check se backend aur uski zaroori services ka status bina credentials dikhaye milta hai.
+  const checks = {
+    database: isDatabaseConnected() ? 'connected' : 'unavailable',
+    cloudinary: hasCloudinary() ? 'configured' : 'unavailable',
+  };
+  const ready = Object.values(checks).every((status) => status !== 'unavailable');
+  return res.status(ready ? 200 : 503).json({
+    status: ready ? 'ok' : 'degraded',
+    checks,
+  });
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_UPLOAD_BYTES, files: MAX_GALLERY_IMAGES },
