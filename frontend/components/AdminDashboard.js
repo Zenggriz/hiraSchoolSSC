@@ -5,8 +5,8 @@ import Link from 'next/link';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { API_URL } from '../lib/api';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 const CLASSES = [
   'Playgroup',
   'Nursery',

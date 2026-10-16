@@ -5,8 +5,8 @@ import Link from 'next/link';
 import axios from 'axios';
 import { useState } from 'react';
 import { useSiteSettings } from '../components/SiteLayout';
+import { API_URL } from '../lib/api';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 function SectionHeading({ eyebrow, title, description, gold = false }) {
   return (
     <div className="section-head">

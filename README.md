@@ -104,4 +104,4 @@ cd backend
 npm start
 ```
 
-Production mein `FRONTEND_ORIGIN`, `NEXT_PUBLIC_API_URL`, MongoDB, admin token, aur zaroorat ke mutabiq Cloudinary/Green-API values apne deployed domains ke mutabiq set karein. `.env` aur `.env.local` private rakhein; sirf `.env.example` share karein.
+Vercel frontend project ka **Root Directory** `frontend` hona chahiye. Vercel ke Environment Variables mein `NEXT_PUBLIC_API_URL` ko deployed backend URL par set karein (is project ke liye `https://backend.hiraschoolssc.com`), phir redeploy karein. Backend hosting ke Environment Variables mein `MONGODB_URI` ko reachable MongoDB Atlas URI par, `FRONTEND_ORIGIN` ko frontend ke exact deployed domain(s) par, aur `PUBLIC_API_URL` ko backend URL par set karein. Multiple frontend domains/preview hosts hon to `FRONTEND_ORIGIN` mein comma-separated exact origins dein. Cloudinary aur Green-API settings bhi backend environment mein honi chahiye. Vercel frontend domain ko project ke **Domains** settings mein attach karna zaroori hai. `.env` aur `.env.local` private rakhein; sirf `.env.example` share karein.
