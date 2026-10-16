@@ -15,6 +15,8 @@ const DEFAULT_SETTINGS = {
   galleryLayout: { mode: 'grid', columns: 3 },
   loaded: false,
   error: '',
+  cmsAvailable: true,
+  warning: '',
 };
 const SiteSettingsContext = createContext(DEFAULT_SETTINGS);
 
@@ -191,6 +193,8 @@ export default function SiteLayout({ children }) {
           ...data,
           gallery: Array.isArray(data.gallery) ? data.gallery : [],
           content: data.content && typeof data.content === 'object' ? data.content : {},
+          cmsAvailable: data.cmsAvailable !== false,
+          warning: data.warning || '',
           loaded: true,
         });
       })
@@ -215,6 +219,18 @@ export default function SiteLayout({ children }) {
         <meta name="theme-color" content="#18245C" />
         <meta name="robots" content="index, follow" />
       </Head>
+      {settings.loaded && settings.warning && (
+        <p role="status" style={{
+          margin: 0,
+          padding: '8px 16px',
+          background: '#fff4d6',
+          color: '#614b00',
+          textAlign: 'center',
+          fontSize: '0.85rem',
+        }}>
+          {settings.warning}
+        </p>
+      )}
       {settings.loaded && !settings.error && <SchoolHeader settings={settings} />}
       {children}
       {settings.loaded && !settings.error && <SchoolFooter settings={settings} />}

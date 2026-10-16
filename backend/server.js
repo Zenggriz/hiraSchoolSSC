@@ -499,7 +499,14 @@ function requireCloudinary(res) {
 }
 
 app.get('/api/config', async (req, res) => {
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!hasDatabase()) {
+    return res.json({
+      ...publicSettings(null),
+      cmsAvailable: false,
+      warning: 'The CMS database is unavailable. Preset website content is being shown; admin edits are temporarily unavailable.',
+    });
+  }
+  if (!requireCloudinary(res)) return;
   let settings = await WebsiteSettings.findOneAndUpdate(
     { key: 'main' },
     { $setOnInsert: { key: 'main', ...DEFAULT_SETTINGS, content: DEFAULT_CONTENT } },
@@ -550,7 +557,11 @@ app.get('/api/config', async (req, res) => {
       { new: true },
     ).lean();
   }
-  return res.json(publicSettings(settings));
+  return res.json({
+    ...publicSettings(settings),
+    cmsAvailable: true,
+    warning: '',
+  });
 });
 
 app.post(['/api/contact-us', '/api/contact'], contactLimiter, async (req, res) => {
