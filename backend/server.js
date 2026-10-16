@@ -254,8 +254,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '32kb' }));
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   // Health check se backend aur uski zaroori services ka status bina credentials dikhaye milta hai.
+  await connectDatabase();
   const checks = {
     database: isDatabaseConnected() ? 'connected' : 'unavailable',
     cloudinary: hasCloudinary() ? 'configured' : 'unavailable',
@@ -279,11 +280,6 @@ const contactLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: 'Too many inquiries. Please try again later.' },
 });
-
-function hasDatabase() {
-  // DB tayyar na ho to partial ya ghalat data dene ke bajaye endpoint 503 return karta hai.
-  return isDatabaseConnected();
-}
 
 function adminOnly(req, res, next) {
   const expectedToken = process.env.ADMIN_TOKEN;
@@ -486,8 +482,8 @@ if (process.env.WEBSITE_LOCATION
   throw new Error('WEBSITE_LOCATION must be between 2 and 300 characters.');
 }
 
-function requireDatabase(res) {
-  if (hasDatabase()) return true;
+async function requireDatabase(res) {
+  if (await connectDatabase()) return true;
   res.status(503).json({ message: 'The settings database is currently unavailable.' });
   return false;
 }
@@ -499,7 +495,7 @@ function requireCloudinary(res) {
 }
 
 app.get('/api/config', async (req, res) => {
-  if (!hasDatabase()) {
+  if (!await connectDatabase()) {
     return res.json({
       ...publicSettings(null),
       cmsAvailable: false,
@@ -510,7 +506,7 @@ app.get('/api/config', async (req, res) => {
   let settings = await WebsiteSettings.findOneAndUpdate(
     { key: 'main' },
     { $setOnInsert: { key: 'main', ...DEFAULT_SETTINGS, content: DEFAULT_CONTENT } },
-    { new: true, upsert: true, setDefaultsOnInsert: true },
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
   ).lean();
 
   const content = {
@@ -554,7 +550,7 @@ app.get('/api/config', async (req, res) => {
     settings = await WebsiteSettings.findOneAndUpdate(
       { key: 'main' },
       { $set: { content, contentImagePublicIds: imagePublicIds } },
-      { new: true },
+      { returnDocument: 'after' },
     ).lean();
   }
   return res.json({
@@ -629,7 +625,7 @@ app.get('/api/results', async (req, res) => {
   if (!validateClassSection(className, section)) {
     return res.status(400).json({ message: 'Select a supported class and section.' });
   }
-  if (!requireDatabase(res)) return;
+  if (!await requireDatabase(res)) return;
 
   const result = await ResultSheet.findOne({ className, section }).lean();
   if (!result) return res.status(404).json({ message: 'No result sheet is published for this class and section.' });
@@ -641,7 +637,7 @@ app.get('/api/results/:className/:section/download', async (req, res) => {
   if (!validateClassSection(className, section)) {
     return res.status(400).json({ message: 'Select a supported class and section.' });
   }
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!await requireDatabase(res) || !requireCloudinary(res)) return;
 
   const result = await ResultSheet.findOne({ className, section }).lean();
   if (!result) return res.status(404).json({ message: 'No result sheet is published for this class and section.' });
@@ -679,7 +675,7 @@ app.patch('/api/admin/settings', adminOnly, async (req, res) => {
   if (liveLocation === undefined && content === undefined) {
     return res.status(400).json({ message: 'Provide a location or website content to save.' });
   }
-  if (!requireDatabase(res)) return;
+  if (!await requireDatabase(res)) return;
 
   const currentSettings = await WebsiteSettings.findOne({ key: 'main' }).lean();
   const updates = {};
@@ -699,7 +695,7 @@ app.patch('/api/admin/settings', adminOnly, async (req, res) => {
   const settings = await WebsiteSettings.findOneAndUpdate(
     { key: 'main' },
     { $set: updates, $setOnInsert: { key: 'main', gallery: [] } },
-    { new: true, upsert: true, runValidators: true },
+    { returnDocument: 'after', upsert: true, runValidators: true },
   );
   return res.json(publicSettings(settings));
 });
@@ -712,7 +708,7 @@ app.post('/api/admin/content-image/:slot', adminOnly, upload.single('image'), as
   if (!req.file || !IMAGE_MIME_TYPES.has(req.file.mimetype)) {
     return res.status(400).json({ message: 'Choose a JPG, PNG, or WebP image.' });
   }
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!await requireDatabase(res) || !requireCloudinary(res)) return;
 
   const current = await WebsiteSettings.findOne({ key: 'main' }).lean();
   const previousPublicId = current?.contentImagePublicIds?.[slot];
@@ -735,7 +731,7 @@ app.post('/api/admin/content-image/:slot', adminOnly, upload.single('image'), as
         liveLocation: DEFAULT_SETTINGS.liveLocation,
       },
     },
-    { new: true, upsert: true },
+    { returnDocument: 'after', upsert: true },
   );
 
   if (previousPublicId && previousPublicId !== uploaded.public_id) {
@@ -752,12 +748,12 @@ app.post('/api/admin/gallery', adminOnly, upload.array('images', MAX_GALLERY_IMA
     return res.status(400).json({ message: 'Only JPG, PNG, and WebP files can be added to the gallery.' });
   }
   const category = typeof req.body?.category === 'string' ? req.body.category.trim() : '';
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!await requireDatabase(res) || !requireCloudinary(res)) return;
 
   const current = await WebsiteSettings.findOneAndUpdate(
     { key: 'main' },
     { $setOnInsert: { key: 'main', ...DEFAULT_SETTINGS, content: DEFAULT_CONTENT } },
-    { new: true, upsert: true, setDefaultsOnInsert: true },
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
   );
   const galleryFilters = current.content?.galleryFilters || DEFAULT_CONTENT.galleryFilters;
   if (!category || !galleryFilters.includes(category) || category === galleryFilters[0]) {
@@ -801,7 +797,7 @@ app.post('/api/admin/gallery', adminOnly, upload.array('images', MAX_GALLERY_IMA
         $set: { galleryManaged: true },
         $push: { gallery: { $each: uploadedAssets } },
       },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
     if (!updated) {
       await Promise.all(uploadedAssets.map((asset) => deleteCloudinaryAsset(asset.publicId)));
@@ -820,7 +816,7 @@ app.delete('/api/admin/gallery/:imageId', adminOnly, async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.imageId)) {
     return res.status(400).json({ message: 'Invalid gallery image.' });
   }
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!await requireDatabase(res) || !requireCloudinary(res)) return;
 
   const settings = await WebsiteSettings.findOne({ key: 'main' });
   const image = settings?.gallery.id(req.params.imageId);
@@ -833,7 +829,7 @@ app.delete('/api/admin/gallery/:imageId', adminOnly, async (req, res) => {
 });
 
 app.get('/api/admin/results', adminOnly, async (req, res) => {
-  if (!requireDatabase(res)) return;
+  if (!await requireDatabase(res)) return;
   const results = await ResultSheet.find().sort({ className: 1, section: 1 }).lean();
   return res.json(results.map(({ className, section, url, updatedAt }) => ({
     className,
@@ -848,7 +844,7 @@ app.delete('/api/admin/results/:className/:section', adminOnly, async (req, res)
   if (!validateClassSection(className, section)) {
     return res.status(400).json({ message: 'Select a supported class and section.' });
   }
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!await requireDatabase(res) || !requireCloudinary(res)) return;
 
   const result = await ResultSheet.findOne({ className, section });
   if (!result) return res.status(404).json({ message: 'The selected result sheet was not found.' });
@@ -867,7 +863,7 @@ app.post(['/api/admin/upload-result', '/api/admin/results'], adminOnly, upload.s
   if (!ensurePdf(req.file)) {
     return res.status(400).json({ message: 'Choose a valid PDF result sheet.' });
   }
-  if (!requireDatabase(res) || !requireCloudinary(res)) return;
+  if (!await requireDatabase(res) || !requireCloudinary(res)) return;
 
   // Class aur section se mustaqil Cloudinary ID banti hai; nayi upload usi PDF ko replace karti hai.
   const publicId = `hira-school/results/${className}_${section}.pdf`;
@@ -881,7 +877,7 @@ app.post(['/api/admin/upload-result', '/api/admin/results'], adminOnly, upload.s
   const result = await ResultSheet.findOneAndUpdate(
     { className, section },
     { $set: { url: uploaded.secure_url, publicId } },
-    { new: true, upsert: true, runValidators: true },
+    { returnDocument: 'after', upsert: true, runValidators: true },
   );
   if (previous?.publicId && previous.publicId !== publicId) {
     await deleteCloudinaryAsset(previous.publicId, 'raw');
@@ -912,6 +908,11 @@ app.use((error, req, res, next) => {
 
 connectDatabase();
 
-app.listen(PORT, () => {
-  console.log(`School API listening on port ${PORT}`);
-});
+// Local mein Express apna port kholta hai; Vercel par platform exported app ko khud serve karta hai.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`School API listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
