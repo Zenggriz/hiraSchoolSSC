@@ -1,16 +1,16 @@
-const localApiUrl = 'http://localhost:5000';
 const productionApiUrl = 'https://backend.hiraschoolssc.com';
 
-// Local dev mein local Express server use hota hai; Vercel par deployed API default hai.
+// Local dev mein Next.js same-origin proxy use karta hai; production mein deployed API direct call hoti hai.
 export const API_URL = (
   process.env.NEXT_PUBLIC_API_URL
-  || (process.env.NODE_ENV === 'development' ? localApiUrl : productionApiUrl)
+  || (process.env.NODE_ENV === 'development' ? '' : productionApiUrl)
 ).replace(/\/+$/, '');
 
 export function getApiErrorMessage(error, fallback) {
   if (error.response?.data?.message) return error.response.data.message;
   if (!error.response) {
-    return `Cannot connect to the school API at ${API_URL}. Check that the backend is running and allows this website's domain.`;
+    const endpoint = API_URL || 'the local API proxy';
+    return `Cannot connect to ${endpoint}. Check that the backend is running and allows this website's domain.`;
   }
   return error.message || fallback;
 }

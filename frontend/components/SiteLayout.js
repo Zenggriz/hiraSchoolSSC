@@ -7,10 +7,15 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { API_URL, getApiErrorMessage } from '../lib/api';
 
+const MANAGEMENT_CONTACTS = [
+  { name: 'Muhammad Saeed Ur Rehman', role: 'CEO', number: '03000555547' },
+  { name: 'Muhammad Muneeb Ur Rehman', role: 'FM', number: '03181394588' },
+  { name: 'Muhammad Haseeb Ur Rehman', role: 'BM', number: '03178532050' },
+];
 const DEFAULT_SETTINGS = {
   liveLocation: 'https://maps.app.goo.gl/TFA4UbDuUjqmPwWf6',
   gallery: [],
-  managementContacts: [],
+  managementContacts: MANAGEMENT_CONTACTS,
   galleryManaged: false,
   content: {},
   galleryLayout: { mode: 'grid', columns: 3 },
@@ -39,6 +44,39 @@ export function ManagementContactLinks({ contacts = [], className = '' }) {
         );
       })}
     </span>
+  );
+}
+
+export function ManagementContactCards({ contacts = [] }) {
+  const roleLabels = { CEO: 'Chief Executive Officer', FM: 'Finance Manager', BM: 'Branch Manager' };
+  const cardColors = { CEO: 'green', FM: 'blue', BM: 'gold' };
+  return (
+    <div className="management-contact-grid">
+      {contacts.map((contact) => {
+        const digits = contact.number.replace(/\D/g, '');
+        const internationalNumber = `92${digits.startsWith('0') ? digits.slice(1) : digits}`;
+        const displayNumber = `+92 ${digits.startsWith('0') ? digits.slice(1, 4) : digits.slice(0, 3)} ${digits.startsWith('0') ? digits.slice(4, 7) : digits.slice(3, 6)} ${digits.startsWith('0') ? digits.slice(7) : digits.slice(6)}`;
+        return (
+          <article className={`management-contact-card ${cardColors[contact.role] || ''}`} key={contact.number}>
+            <div className="management-contact-heading">
+              <span className="manager-initials">{contact.role}</span>
+              <div>
+                <span className="manager-role">{roleLabels[contact.role] || contact.role}</span>
+                <h3>{contact.name}</h3>
+              </div>
+            </div>
+            <div className="manager-number">
+              <span>Contact number</span>
+              <a href={`tel:+${internationalNumber}`}>{displayNumber}</a>
+            </div>
+            <div className="manager-actions">
+              <a href={`tel:+${internationalNumber}`}><i className="fa-solid fa-phone" />Call</a>
+              <a href={`https://wa.me/${internationalNumber}`} target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-whatsapp" />WhatsApp</a>
+            </div>
+          </article>
+        );
+      })}
+    </div>
   );
 }
 
@@ -75,7 +113,7 @@ function SchoolHeader({ settings }) {
 
   return (
     <>
-      <a className="skip-link" href="#main-content">{copy.skipLinkLabel}</a>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="topbar">
         <div className="container topbar-inner">
           <div className="top-info">
@@ -198,26 +236,18 @@ function SchoolFooter({ settings }) {
 
 export default function SiteLayout({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [pageLoaded, setPageLoaded] = useState(false);
-
-  useEffect(() => {
-    const markPageLoaded = () => setPageLoaded(true);
-    if (document.readyState === 'complete') {
-      const timer = window.setTimeout(markPageLoaded, 0);
-      return () => window.clearTimeout(timer);
-    }
-    window.addEventListener('load', markPageLoaded, { once: true });
-    return () => window.removeEventListener('load', markPageLoaded);
-  }, []);
 
   useEffect(() => {
     let active = true;
-    axios.get(`${API_URL}/api/config`)
+    axios.get(`${API_URL}/api/config`, { timeout: 10_000 })
       .then(({ data }) => {
         if (!active) return;
         setSettings({
           ...DEFAULT_SETTINGS,
           ...data,
+          managementContacts: Array.isArray(data.managementContacts)
+            ? data.managementContacts
+            : MANAGEMENT_CONTACTS,
           gallery: Array.isArray(data.gallery) ? data.gallery : [],
           content: data.content && typeof data.content === 'object' ? data.content : {},
           cmsAvailable: data.cmsAvailable !== false,
@@ -246,8 +276,8 @@ export default function SiteLayout({ children }) {
         <meta name="theme-color" content="#18245C" />
         <meta name="robots" content="index, follow" />
       </Head>
-      {!settings.loaded || !pageLoaded ? (
-        <main className="brand-preloader" role="status" aria-label="Loading Hira School website">
+      {!settings.loaded ? (
+        <main className="brand-preloader" aria-busy="true">
           <Image src="/images/hira-school-logo.png" alt="Hira School Shamim Saeed Campus" width={500} height={150} priority unoptimized />
         </main>
       ) : <>

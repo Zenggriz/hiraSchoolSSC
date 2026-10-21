@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useSiteSettings } from '../components/SiteLayout';
 import { API_URL } from '../lib/api';
-import { ManagementContactLinks } from '../components/SiteLayout';
+import { ManagementContactCards, ManagementContactLinks } from '../components/SiteLayout';
 
 function SectionHeading({ eyebrow, title, description, gold = false }) {
   return (
@@ -28,13 +28,37 @@ export default function Home() {
   const [inquiryStatus, setInquiryStatus] = useState({ text: '', type: '' });
   const [sendingInquiry, setSendingInquiry] = useState(false);
 
+  const siteTitle = copy.siteName || 'Hira School Shamim Saeed Campus';
+  const siteDescription = copy.description || 'Hira School Shamim Saeed Campus — quality education, Islamic Tarbiyah, and evening academy in Sukkur Township.';
+
   if (!settings.loaded || settings.error) {
     const message = settings.loaded
       ? settings.content.configUnavailableMessage || settings.error
-      : settings.content.heroLoadingMessage || 'Loading website…';
-    return <main id="main-content" className="inner-page"><div className="container"><p role="status">{message}</p></div></main>;
+      : settings.content.heroLoadingMessage || 'Loading school information…';
+    return (
+      <>
+        <Head>
+          <title>{siteTitle}</title>
+          <meta name="description" content={siteDescription} />
+          <meta property="og:title" content={siteTitle} />
+          <meta property="og:description" content={siteDescription} />
+        </Head>
+        {!settings.loaded ? (
+          <main id="main-content" className="brand-preloader" aria-busy="true">
+            <Image src="/images/hira-school-logo.png" alt="Hira School Shamim Saeed Campus" width={500} height={150} priority unoptimized />
+          </main>
+        ) : (
+          <main id="main-content" className="inner-page site-load-error">
+            <div className="container">
+              <h1>{siteTitle}</h1>
+              <p role="alert">{message}</p>
+              <button className="button" type="button" onClick={() => window.location.reload()}>Try again</button>
+            </div>
+          </main>
+        )}
+      </>
+    );
   }
-
   const selectedFilter = activeFilter || copy.galleryFilters[0];
   const gallery = settings.galleryManaged
     ? settings.gallery.map((image) => ({
@@ -75,7 +99,12 @@ export default function Home() {
 
   return (
     <>
-      <Head><title>{copy.siteName}</title></Head>
+      <Head>
+        <title>{siteTitle}</title>
+        <meta name="description" content={siteDescription} />
+        <meta property="og:title" content={siteTitle} />
+        <meta property="og:description" content={siteDescription} />
+      </Head>
       <main id="main-content">
         <section className="hero" id="home">
           <div className="container hero-grid">
@@ -297,10 +326,11 @@ export default function Home() {
         <section className="section" id="contact">
           <div className="container">
             <SectionHeading eyebrow={copy.contactEyebrow} title={copy.contactTitle} description={copy.contactDescription} />
+            <h3 className="management-contact-title"><i className="fa-solid fa-user-tie" /> School Executive Management</h3>
+            <ManagementContactCards contacts={settings.managementContacts} />
             <div className="contact-grid">
               <div className="contact-list">
                 <div className="contact-item"><i className="fa-solid fa-map-location-dot" /><div><h3>{copy.contactAddressLabel}</h3><p>{settings.liveLocation}</p></div></div>
-                <div className="contact-item"><i className="fa-brands fa-whatsapp" /><div><h3>{copy.contactWhatsAppLabel} · {copy.contactPhoneLabel}</h3><ManagementContactLinks contacts={settings.managementContacts} /></div></div>
                 <div className="contact-item"><i className="fa-solid fa-envelope" /><div><h3>{copy.contactEmailLabel}</h3><a href={`mailto:${copy.email}`}>{copy.email}</a></div></div>
               </div>
               <div className="map-wrap">

@@ -475,3 +475,30 @@ footer .footer-logo{
 .admin-login-card>img{width:min(240px,100%);height:auto;margin:0 0 24px;border-radius:0;object-fit:contain}
 @media(max-width:800px){.top-manager-contacts .manager-contact-links{grid-template-columns:1fr}.top-manager-contacts .manager-contact-links a{font-size:.72rem}.academy-highlights{justify-content:flex-start}}
 @media(max-width:560px){.faculty-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.faculty-card>img{height:210px}.faculty-card>div{padding:12px}.faculty-card h3{font-size:.82rem}.faculty-switch{margin-bottom:22px}.faculty-switch button{min-width:105px}.manager-contact-links a{font-size:.72rem}}
+.management-contact-title{display:flex;align-items:center;gap:10px;margin:0 0 17px;color:var(--navy);font:700 1.1rem Poppins,sans-serif}
+.management-contact-title i{color:var(--green)}
+.management-contact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:0 0 32px}
+.management-contact-card{position:relative;overflow:hidden;padding:24px 22px;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:var(--shadow);isolation:isolate}
+.management-contact-card:after{position:absolute;z-index:-1;top:-62px;right:-50px;width:140px;height:140px;border-radius:50%;background:rgba(8,116,67,.05);content:""}
+.management-contact-heading{display:flex;align-items:center;gap:13px;min-height:58px}
+.manager-initials{display:grid;width:58px;height:58px;flex:0 0 58px;place-items:center;border:4px solid #f0f4f8;border-radius:18px;background:var(--navy-2);color:var(--gold);font:800 1rem Poppins,sans-serif}
+.management-contact-card.blue .manager-initials{background:#087443;color:#fff}
+.management-contact-card.gold .manager-initials{background:#f59e0b;color:#fff}
+.manager-role{display:inline-block;margin-bottom:5px;padding:3px 9px;border:1px solid #c8f6e0;border-radius:999px;background:#effcf5;color:var(--green);font:700 .62rem Poppins,sans-serif;letter-spacing:.35px;text-transform:uppercase}
+.management-contact-card.blue .manager-role{border-color:#d4e5ff;background:#f1f6ff;color:#3156cb}
+.management-contact-card.gold .manager-role{border-color:#ffedbd;background:#fffbeb;color:#a55213}
+.management-contact-heading h3{color:var(--navy);font:700 .95rem Poppins,sans-serif;line-height:1.35}
+.manager-number{display:grid;gap:3px;margin:17px 0 15px;padding:12px 14px;border:1px solid #edf1f5;border-radius:12px;background:#f8fafc}
+.manager-number span{color:var(--muted);font-size:.72rem}
+.manager-number a{color:var(--navy);font:700 .92rem ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.2px}
+.manager-number a:hover{color:var(--green)}
+.manager-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.manager-actions a{display:flex;min-height:42px;align-items:center;justify-content:center;gap:7px;border-radius:10px;background:#f1f5f9;color:#334155;font:700 .75rem Poppins,sans-serif;transition:var(--transition)}
+.manager-actions a:hover{background:#e4ebf2}
+.manager-actions a:last-child{background:#09b981;color:#fff}
+.manager-actions a:last-child:hover{background:#079769}
+.site-load-error{text-align:center}
+.site-load-error h1{margin-bottom:10px;color:var(--navy)}
+.site-load-error p{max-width:620px;margin:0 auto 20px;color:var(--muted)}
+@media(max-width:900px){.management-contact-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.management-contact-grid{grid-template-columns:1fr;gap:12px}.management-contact-card{padding:19px}.management-contact-title{font-size:1rem}}

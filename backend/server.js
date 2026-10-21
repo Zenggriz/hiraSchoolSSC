@@ -263,7 +263,9 @@ const MANAGEMENT_CONTACTS = [
 const allowedOrigins = new Set([
   'https://hiraschoolssc.com',
   'https://www.hiraschoolssc.com',
-  ...(process.env.FRONTEND_ORIGIN || 'http://localhost:3000')
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  ...(process.env.FRONTEND_ORIGIN || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
@@ -607,8 +609,11 @@ app.get('/api/config', async (req, res) => {
 });
 
 function buildManagementMessage(category, values) {
+  const heading = category === 'contact'
+    ? 'contact (HIRA SCHOOL SHAMIM SAEED CAMPUS (Contact)'
+    : 'admission (HIRA SCHOOL SHAMIM SAEED CAMPUS)';
   return [
-    `${category} (HIRA SCHOOL SHAMIM SAEED CAMPUS${category === 'contact' ? ' (Contact)' : ''}`,
+    heading,
     `Name: ${values.name}`,
     `Father name: ${values.fatherName}`,
     `Phone: ${values.phone}`,
