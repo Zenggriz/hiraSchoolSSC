@@ -33,6 +33,15 @@ const CONTENT_FIELDS = [
   { section: 'Academics', fields: [
     ['academicEyebrow', 'Section label'], ['academicTitle', 'Section heading'], ['academicDescription', 'Section description'],
   ] },
+  { section: 'Academy', fields: [
+    ['academyEyebrow', 'Section label'], ['academyTitle', 'Section heading'],
+    ['academyDescription', 'Section description'], ['academySchedule', 'Class schedule'],
+  ] },
+  { section: 'Faculty', fields: [
+    ['facultyEyebrow', 'Section label'], ['facultyTitle', 'Section heading'],
+    ['facultyDescription', 'Section description'], ['facultySchoolLabel', 'School toggle label'],
+    ['facultyAcademyLabel', 'Academy toggle label'],
+  ] },
   { section: 'Facilities', fields: [
     ['facilitiesEyebrow', 'Section label'], ['facilitiesTitle', 'Section heading'], ['facilitiesDescription', 'Section description'],
   ] },
@@ -94,6 +103,10 @@ const CONTENT_LISTS = [
   { key: 'activities', title: 'Activity captions', fields: [['title', 'Caption'], ['imageAlt', 'Image description'], ['imageKey', 'Image slot']] },
   { key: 'galleryFilters', title: 'Gallery filter names', fields: [['value', 'Filter name']] },
   { key: 'leadershipPoints', title: 'Leadership highlights', fields: [['value', 'Highlight']] },
+  { key: 'academyHighlights', title: 'Academy highlights', fields: [['value', 'Highlight']] },
+  { key: 'academyPrograms', title: 'Academy programs', fields: [['title', 'Program'], ['description', 'Description']] },
+  { key: 'schoolFaculty', title: 'School faculty', fields: [['name', 'Name'], ['designation', 'Designation'], ['imageKey', 'Photo slot']] },
+  { key: 'academyFaculty', title: 'Academy faculty', fields: [['name', 'Name'], ['designation', 'Designation'], ['imageKey', 'Photo slot']] },
   { key: 'footerAcademicsLinks', title: 'Footer academic links', fields: [['label', 'Link label'], ['href', 'Link destination']] },
   { key: 'socialLinks', title: 'Social media links', fields: [['label', 'Network name'], ['url', 'Profile URL']] },
 ];
@@ -102,6 +115,8 @@ const ADMIN_PAGES = [
   { id: 'about', label: 'About Us', icon: '▤', groups: ['About Us'], lists: ['aboutHighlights'] },
   { id: 'why', label: 'Why Choose Us', icon: '✦', groups: ['Why Choose Us'], lists: ['benefits'] },
   { id: 'academics', label: 'Academics', icon: '▧', groups: ['Academics'], lists: ['academicStages'] },
+  { id: 'academy', label: 'Academy', icon: '▧', groups: ['Academy'], lists: ['academyHighlights', 'academyPrograms'] },
+  { id: 'faculty', label: 'Faculty', icon: '♙', groups: ['Faculty'], lists: ['schoolFaculty', 'academyFaculty'] },
   { id: 'facilities', label: 'Facilities', icon: '⌂', groups: ['Facilities'], lists: ['facilities'] },
   { id: 'activities', label: 'Activities', icon: '◉', groups: ['Activities'], lists: ['activities'] },
   { id: 'gallery', label: 'Gallery', icon: '▧', groups: ['Gallery'], lists: ['galleryFilters'] },
@@ -254,6 +269,14 @@ export default function AdminDashboard() {
       ? ''
       : Object.fromEntries(list.fields.map(([field]) => [field, '']));
     if (list.key === 'activities') newItem.imageKey = 'activityOne';
+    if (list.key === 'schoolFaculty' || list.key === 'academyFaculty') {
+      const slotPrefix = list.key === 'schoolFaculty' ? 'schoolFaculty-' : 'academyFaculty-';
+      const nextSlot = (contentDraft[list.key] || []).reduce((highest, member) => {
+        const match = member.imageKey?.match(/-(\d+)$/);
+        return match ? Math.max(highest, Number(match[1])) : highest;
+      }, 0) + 1;
+      newItem.imageKey = `${slotPrefix}${nextSlot}`;
+    }
     const defaultIcons = {
       benefits: 'fa-star',
       academicStages: 'fa-book-open',
@@ -314,8 +337,12 @@ export default function AdminDashboard() {
     try {
       const { data } = await adminRequest(token, 'post', `/api/admin/content-image/${slot}`, body);
       setSettings(data);
-      setContentDraft(data.content || {});
-      setNotice(`${CONTENT_IMAGES.find(([key]) => key === slot)?.[1] || 'Homepage image'} updated.`);
+      setContentDraft((current) => ({
+        ...(data.content || {}),
+        ...current,
+        images: data.content?.images || current.images || {},
+      }));
+      setNotice(`${CONTENT_IMAGES.find(([key]) => key === slot)?.[1] || 'Faculty photo'} updated.`);
       event.target.value = '';
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -450,9 +477,13 @@ export default function AdminDashboard() {
           </header>
 
           <main className="admin-content" id="dashboard">
-            {!isAuthenticated ? (
+            {!isAuthenticated && (isChecking || busyAction === 'login') ? (
+              <div className="brand-preloader admin-preloader" role="status" aria-label="Signing in">
+                <Image src="/images/hira-school-logo.png" alt="Hira School logo" width={360} height={110} priority unoptimized />
+              </div>
+            ) : !isAuthenticated ? (
               <section className="admin-login-card">
-                <Image src="/logo.jpg" alt="" width={58} height={58} />
+                <Image src="/images/hira-school-logo.png" alt="Hira School logo" width={240} height={80} unoptimized />
                 <p className="eyebrow">SECURE SCHOOL ADMIN</p>
                 <h1>Sign in to manage your website.</h1>
                 <p>Enter the admin token configured by your server administrator.</p>
@@ -497,9 +528,9 @@ export default function AdminDashboard() {
                         <legend>{group.section}</legend>
                         <div className="cms-fields">
                           {group.fields.map(([key, label]) => (
-                            <label className={['heroDescription', 'aboutParagraphOne', 'aboutParagraphTwo', 'whyDescription', 'academicDescription', 'facilitiesDescription', 'activitiesDescription', 'galleryDescription', 'leadershipDescription', 'leadershipBody', 'admissionsDescription', 'contactDescription', 'footerDescription', 'mapEmbedUrl', 'directionsUrl'].includes(key) ? 'cms-field-wide' : ''} key={key}>
+                            <label className={['heroDescription', 'aboutParagraphOne', 'aboutParagraphTwo', 'whyDescription', 'academicDescription', 'academyDescription', 'facilitiesDescription', 'activitiesDescription', 'galleryDescription', 'leadershipDescription', 'leadershipBody', 'admissionsDescription', 'contactDescription', 'footerDescription', 'mapEmbedUrl', 'directionsUrl'].includes(key) ? 'cms-field-wide' : ''} key={key}>
                               {label}
-                              {['heroDescription', 'aboutParagraphOne', 'aboutParagraphTwo', 'whyDescription', 'academicDescription', 'facilitiesDescription', 'activitiesDescription', 'galleryDescription', 'leadershipDescription', 'leadershipBody', 'admissionsDescription', 'contactDescription', 'footerDescription'].includes(key)
+                              {['heroDescription', 'aboutParagraphOne', 'aboutParagraphTwo', 'whyDescription', 'academicDescription', 'academyDescription', 'facilitiesDescription', 'activitiesDescription', 'galleryDescription', 'leadershipDescription', 'leadershipBody', 'admissionsDescription', 'contactDescription', 'footerDescription'].includes(key)
                                 ? <textarea rows="3" value={contentDraft[key] || ''} onChange={(event) => updateContentField(key, event.target.value)} />
                                 : <input value={contentDraft[key] || ''} onChange={(event) => updateContentField(key, event.target.value)} />}
                             </label>
@@ -516,14 +547,34 @@ export default function AdminDashboard() {
                               {list.fields.map(([field, label]) => (
                                 <label className={field === 'description' || field === 'url' ? 'cms-field-wide' : ''} key={field}>
                                   {label}
-                                  {field === 'imageKey'
+                                  {field === 'imageKey' && list.key === 'activities'
                                     ? <select value={item?.[field] || 'activityOne'} onChange={(event) => updateContentListItem(list.key, index, field, event.target.value)}>{CONTENT_IMAGES.filter(([imageKey]) => imageKey.startsWith('activity')).map(([imageKey, imageLabel]) => <option key={imageKey} value={imageKey}>{imageLabel}</option>)}</select>
+                                    : field === 'imageKey'
+                                    ? <input value={item?.[field] || ''} readOnly />
                                     : field === 'description'
                                     ? <textarea rows="2" value={field === 'value' ? item : item?.[field] || ''} onChange={(event) => updateContentListItem(list.key, index, field, event.target.value)} />
                                     : <input value={field === 'value' ? item : item?.[field] || ''} onChange={(event) => updateContentListItem(list.key, index, field, event.target.value)} />}
                                 </label>
                               ))}
                             </div>
+                            {(list.key === 'schoolFaculty' || list.key === 'academyFaculty') && (
+                              <label className="faculty-photo-upload">
+                                Faculty photo
+                                <Image
+                                  src={contentDraft.images?.[item.imageKey] || settings.content?.images?.[item.imageKey] || '/images/welcome-student.webp'}
+                                  alt={`${item.name || 'Faculty member'} photo`}
+                                  width={90}
+                                  height={110}
+                                  unoptimized
+                                />
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  onChange={(event) => uploadContentImage(event, item.imageKey)}
+                                  disabled={busyAction === `content-image-${item.imageKey}`}
+                                />
+                              </label>
+                            )}
                             <button className="button button-outline button-small" type="button" onClick={() => removeContentListItem(list.key, index)}>Remove</button>
                           </div>
                         ))}

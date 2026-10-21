@@ -68,6 +68,26 @@ const DEFAULT_CONTENT = {
     'Highly Qualified & Dedicated Teaching Faculty',
     'Focus on Character Building, Hifz & Public Speaking',
   ],
+  academyEyebrow: 'Evening Academy',
+  academyTitle: 'Focused Learning After School',
+  academyDescription: 'Hira School Shamim Saeed Campus also offers evening academy classes in a supportive, focused learning environment.',
+  academySchedule: 'Evening classes · Contact the campus for current timings',
+  academyHighlights: ['Experienced faculty', 'Small-group guidance', 'Focused subject support'],
+  academyPrograms: [
+    { title: 'Subject Coaching', description: 'Focused support to strengthen understanding and classroom performance.' },
+    { title: 'Exam Preparation', description: 'Structured revision and practice to help students prepare with confidence.' },
+  ],
+  facultyEyebrow: 'Our Faculty',
+  facultyTitle: 'Meet the People Who Guide Our Students',
+  facultyDescription: 'Choose School or Academy to see the faculty supporting each learning program.',
+  facultySchoolLabel: 'School',
+  facultyAcademyLabel: 'Academy',
+  schoolFaculty: [
+    { name: 'School Faculty', designation: 'Teaching team', imageKey: 'schoolFaculty-1' },
+  ],
+  academyFaculty: [
+    { name: 'Academy Faculty', designation: 'Evening teaching team', imageKey: 'academyFaculty-1' },
+  ],
   whyEyebrow: 'Why Hira School',
   whyTitle: 'A Strong Foundation for Every Child',
   whyDescription: 'A disciplined and supportive environment designed around academics, character, safety, and student development.',
@@ -138,11 +158,11 @@ const DEFAULT_CONTENT = {
   campusAdminLabel: 'Campus Admin',
   officialEmailLabel: 'Official Email',
   inquiryNameLabel: 'Parent / Guardian Name *',
-  inquiryEmailLabel: 'Email Address *',
-  inquiryPhoneLabel: 'WhatsApp / Phone Number',
+  inquiryEmailLabel: 'Email Address (optional)',
+  inquiryPhoneLabel: 'WhatsApp / Phone Number *',
   inquiryMessageLabel: 'Your Message *',
   inquirySendingLabel: 'Sending inquiry…',
-  inquirySubmitLabel: 'Submit Inquiry & Continue to WhatsApp',
+  inquirySubmitLabel: 'Send Inquiry to School Management',
   inquiryPlaceholderName: 'Enter full name',
   inquiryPlaceholderEmail: 'Enter your email',
   inquiryPlaceholderPhone: '03XXXXXXXXX',
@@ -181,6 +201,8 @@ const DEFAULT_CONTENT = {
     { label: 'Home', href: '#home' },
     { label: 'About', href: '#about' },
     { label: 'Academics', href: '#academics' },
+    { label: 'Academy', href: '#academy' },
+    { label: 'Faculty', href: '#faculty' },
     { label: 'Facilities', href: '#facilities' },
     { label: 'Activities', href: '#activities' },
     { label: 'Gallery', href: '#gallery' },
@@ -222,16 +244,20 @@ const DEFAULT_CONTENT = {
     activityFour: '/images/learning-environment.webp',
     activityFive: '/images/campus-exterior.webp',
     leadership: DEFAULT_STUDENT_ACHIEVEMENT_IMAGE,
+    'schoolFaculty-1': '/images/welcome-student.webp',
+    'academyFaculty-1': '/images/kindergarten-learning.webp',
   },
 };
 const CONTENT_IMAGE_SLOTS = new Set([
   'logo', 'hero', 'about', 'activityOne', 'activityTwo', 'activityThree',
   'activityFour', 'activityFive', 'leadership',
 ]);
+const isContentImageSlot = (slot) => CONTENT_IMAGE_SLOTS.has(slot)
+  || /^(school|academy)Faculty-[a-z0-9-]{1,60}$/.test(slot);
 const MANAGEMENT_CONTACTS = [
-  { name: 'Muhammad Saeed ur Rehman', role: 'CEO', number: '03000555547' },
-  { name: 'Muhammad Muneeb ur Rehman', role: 'Finance Manager', number: '03181394588' },
-  { name: 'Muhammad Haseeb ur Rehman', role: 'Branch Manager', number: '03178532050' },
+  { name: 'Muhammad Saeed Ur Rehman', role: 'CEO', number: '03000555547' },
+  { name: 'Muhammad Muneeb Ur Rehman', role: 'FM', number: '03181394588' },
+  { name: 'Muhammad Haseeb Ur Rehman', role: 'BM', number: '03178532050' },
 ];
 
 const allowedOrigins = new Set([
@@ -338,8 +364,14 @@ function publicSettings(settings) {
         : item
     ));
   }
+  const navigationLinks = [...(content.navigationLinks || DEFAULT_CONTENT.navigationLinks)];
+  for (const [label, href] of [['Academy', '#academy'], ['Faculty', '#faculty']]) {
+    if (!navigationLinks.some((item) => item.href === href)) navigationLinks.push({ label, href });
+  }
+  content.navigationLinks = navigationLinks;
   return {
     liveLocation: process.env.WEBSITE_LOCATION || settings?.liveLocation || DEFAULT_SETTINGS.liveLocation,
+    managementContacts: MANAGEMENT_CONTACTS,
     galleryManaged: Boolean(settings?.galleryManaged),
     content,
     galleryLayout: {
@@ -361,7 +393,8 @@ function validateCmsContent(content) {
   const arrayKeys = [
     'aboutHighlights', 'trustItems', 'benefits', 'academicStages', 'facilities',
     'activities', 'galleryFilters', 'galleryItems', 'leadershipPoints',
-    'navigationLinks', 'footerAcademicsLinks', 'socialLinks',
+    'navigationLinks', 'footerAcademicsLinks', 'socialLinks', 'academyHighlights',
+    'academyPrograms', 'schoolFaculty', 'academyFaculty',
   ];
   const structuredKeys = new Set([...arrayKeys, 'images', 'galleryLayout', 'galleryColumns']);
   if (Object.entries(content).some(([key, value]) => (
@@ -374,7 +407,7 @@ function validateCmsContent(content) {
       return `${key} must be a list of no more than 30 items.`;
     }
   }
-  for (const key of ['aboutHighlights', 'galleryFilters', 'leadershipPoints']) {
+  for (const key of ['aboutHighlights', 'galleryFilters', 'leadershipPoints', 'academyHighlights']) {
     if (content[key]?.some((item) => typeof item !== 'string' || item.length > 200)) {
       return `${key} must contain only short text values.`;
     }
@@ -389,6 +422,9 @@ function validateCmsContent(content) {
     navigationLinks: ['label', 'href'],
     footerAcademicsLinks: ['label', 'href'],
     socialLinks: ['label', 'icon', 'url'],
+    academyPrograms: ['title', 'description'],
+    schoolFaculty: ['name', 'designation', 'imageKey'],
+    academyFaculty: ['name', 'designation', 'imageKey'],
   };
   for (const [key, fields] of Object.entries(objectListFields)) {
     if (content[key]?.some((item) => (
@@ -413,7 +449,7 @@ function validateCmsContent(content) {
   if (content.images !== undefined
     && (!content.images || typeof content.images !== 'object' || Array.isArray(content.images)
       || Object.entries(content.images).some(([slot, url]) => (
-        !CONTENT_IMAGE_SLOTS.has(slot) || typeof url !== 'string' || url.length > 2000
+        !isContentImageSlot(slot) || typeof url !== 'string' || url.length > 2000
           || !isCloudinaryImageUrl(url)
       )))) {
     return 'Homepage images must be uploaded to Cloudinary.';
@@ -425,6 +461,16 @@ function validateCmsContent(content) {
     !item || typeof item !== 'object' || !CONTENT_IMAGE_SLOTS.has(item.imageKey)
   ))) {
     return 'Each activity must reference a supported homepage image slot.';
+  }
+  for (const key of ['schoolFaculty', 'academyFaculty']) {
+    const expectedPrefix = key === 'schoolFaculty' ? 'schoolFaculty-' : 'academyFaculty-';
+    if (content[key]?.some((item) => (
+      !item || typeof item.name !== 'string' || !item.name.trim()
+        || !item.imageKey || !item.imageKey.startsWith(expectedPrefix)
+        || !isContentImageSlot(item.imageKey)
+    ))) {
+      return `${key} must include a name and a valid photo slot for each faculty member.`;
+    }
   }
   if (content.galleryItems?.some((item) => (
     !item || typeof item !== 'object' || typeof item.url !== 'string'
@@ -560,63 +606,103 @@ app.get('/api/config', async (req, res) => {
   });
 });
 
-app.post(['/api/contact-us', '/api/contact'], contactLimiter, async (req, res) => {
-  const name = typeof req.body?.name === 'string'
-    ? req.body.name.trim().replace(/\s+/g, ' ')
-    : '';
-  const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
-  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
-  const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
-  const brandName = typeof req.body?.brandName === 'string' ? req.body.brandName.trim() : '';
-
-  if (name.length < 2 || name.length > 100
-    || phone.length > 30
-    || email.length > 254
-    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    || message.length < 5 || message.length > 2000
-    || brandName.length > 100) {
-    return res.status(400).json({ message: 'Please provide a valid name, email, and message.' });
-  }
-  if (!process.env.GREEN_API_INSTANCE_ID || !process.env.GREEN_API_TOKEN) {
-    return res.status(503).json({ message: 'The inquiry messaging service is not configured.' });
-  }
-
-  const inquiry = [
-    'New school website inquiry',
-    `Name: ${name}`,
-    `Phone: ${phone}`,
-    `Email: ${email}`,
-    `Message: ${message}`,
-    `Brand: ${brandName || 'Hira School — Shamim Saeed Campus'}`,
-    'Principal reference: Aniqa Rafique',
+function buildManagementMessage(category, values) {
+  return [
+    `${category} (HIRA SCHOOL SHAMIM SAEED CAMPUS${category === 'contact' ? ' (Contact)' : ''}`,
+    `Name: ${values.name}`,
+    `Father name: ${values.fatherName}`,
+    `Phone: ${values.phone}`,
+    values.email ? `Email: ${values.email}` : '',
+    `Message: ${values.message}`,
   ].filter(Boolean).join('\n');
+}
+
+async function sendManagementMessage(message) {
+  if (!process.env.GREEN_API_INSTANCE_ID || !process.env.GREEN_API_TOKEN) {
+    return { configured: false, failedRoles: MANAGEMENT_CONTACTS.map(({ role }) => role) };
+  }
+
   const apiBase = (process.env.GREEN_API_BASE_URL || 'https://api.green-api.com').replace(/\/+$/, '');
   const endpoint = `${apiBase}/waInstance${encodeURIComponent(process.env.GREEN_API_INSTANCE_ID)}`
     + `/sendMessage/${encodeURIComponent(process.env.GREEN_API_TOKEN)}`;
-  // Teeno managers ko parallel request bhejte hain; aik fail ho tab bhi baqi notifications jati hain.
   const outcomes = await Promise.allSettled(MANAGEMENT_CONTACTS.map(async (contact) => {
     const recipient = contact.number.replace(/\D/g, '');
     const recipientIntl = recipient.startsWith('0') ? `92${recipient.slice(1)}` : recipient;
     await axios.post(endpoint, {
       chatId: `${recipientIntl}@c.us`,
-      message: `${inquiry}\n\nAssigned contact: ${contact.name} (${contact.role})`,
-    }, {
-      timeout: 12_000,
-    });
+      message,
+    }, { timeout: 12_000 });
     return contact.role;
   }));
   const failedRoles = outcomes.flatMap((outcome, index) => (
     outcome.status === 'rejected' ? [MANAGEMENT_CONTACTS[index].role] : []
   ));
-
   if (failedRoles.length) {
-    console.error('WhatsApp inquiry delivery failed for:', failedRoles.join(', '));
+    console.error('WhatsApp message delivery failed for:', failedRoles.join(', '));
+  }
+  return { configured: true, failedRoles };
+}
+
+app.post(['/api/contact-us', '/api/contact'], contactLimiter, async (req, res) => {
+  const name = typeof req.body?.name === 'string'
+    ? req.body.name.trim().replace(/\s+/g, ' ')
+    : '';
+  const fatherName = typeof req.body?.fatherName === 'string' ? req.body.fatherName.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+  const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+
+  if (name.length < 2 || name.length > 100
+    || fatherName.length < 2 || fatherName.length > 100
+    || phone.length < 5 || phone.length > 30
+    || email.length > 254
+    || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    || message.length < 5 || message.length > 2000
+  ) {
+    return res.status(400).json({ message: 'Please provide a valid name, father name, phone, and message.' });
+  }
+
+  const delivery = await sendManagementMessage(buildManagementMessage('contact', {
+    name, fatherName, phone, email, message,
+  }));
+  if (!delivery.configured) {
+    return res.status(503).json({ message: 'The inquiry messaging service is not configured.' });
+  }
+  if (delivery.failedRoles.length) {
     return res.status(502).json({
       message: 'The inquiry could not be delivered to all management contacts. Please try again.',
     });
   }
 
   return res.status(202).json({ message: 'Your inquiry was sent to the school management team.' });
+});
+
+app.post('/api/admission-notification', contactLimiter, async (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim().replace(/\s+/g, ' ') : '';
+  const fatherName = typeof req.body?.fatherName === 'string' ? req.body.fatherName.trim() : '';
+  const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+  if (name.length < 2 || name.length > 100 || fatherName.length < 2 || fatherName.length > 100
+    || phone.length < 5 || phone.length > 30 || email.length > 254
+    || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    || message.length > 2000) {
+    return res.status(400).json({ message: 'Please provide valid admission contact details.' });
+  }
+
+  // Is endpoint mein admission details sirf WhatsApp par jati hain; MongoDB mein save nahi hotin.
+  const delivery = await sendManagementMessage(buildManagementMessage('admission', {
+    name, fatherName, phone, email, message,
+  }));
+  if (!delivery.configured) {
+    return res.status(503).json({ message: 'The admission messaging service is not configured.' });
+  }
+  if (delivery.failedRoles.length) {
+    return res.status(502).json({
+      message: 'The admission details could not be delivered to all management contacts. Please retry.',
+    });
+  }
+  return res.status(202).json({ message: 'The admission form was sent to the school management team.' });
 });
 
 app.get('/api/results', async (req, res) => {
@@ -702,7 +788,7 @@ app.patch('/api/admin/settings', adminOnly, async (req, res) => {
 
 app.post('/api/admin/content-image/:slot', adminOnly, upload.single('image'), async (req, res) => {
   const { slot } = req.params;
-  if (!CONTENT_IMAGE_SLOTS.has(slot)) {
+  if (!isContentImageSlot(slot)) {
     return res.status(400).json({ message: 'Select a supported homepage image slot.' });
   }
   if (!req.file || !IMAGE_MIME_TYPES.has(req.file.mimetype)) {

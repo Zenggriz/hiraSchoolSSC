@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useSiteSettings } from '../components/SiteLayout';
 import { API_URL } from '../lib/api';
+import { ManagementContactLinks } from '../components/SiteLayout';
 
 function SectionHeading({ eyebrow, title, description, gold = false }) {
   return (
@@ -22,7 +23,8 @@ export default function Home() {
   const settings = useSiteSettings();
   const copy = settings.content;
   const [activeFilter, setActiveFilter] = useState('');
-  const [inquiry, setInquiry] = useState({ name: '', email: '', phone: '', message: '' });
+  const [activeFaculty, setActiveFaculty] = useState('school');
+  const [inquiry, setInquiry] = useState({ name: '', fatherName: '', email: '', phone: '', message: '' });
   const [inquiryStatus, setInquiryStatus] = useState({ text: '', type: '' });
   const [sendingInquiry, setSendingInquiry] = useState(false);
 
@@ -58,10 +60,9 @@ export default function Home() {
     try {
       const { data } = await axios.post(`${API_URL}/api/contact-us`, {
         ...inquiry,
-        brandName: copy.siteName,
       });
       setInquiryStatus({ text: data.message, type: 'success' });
-      setInquiry({ name: '', email: '', phone: '', message: '' });
+      setInquiry({ name: '', fatherName: '', email: '', phone: '', message: '' });
     } catch (error) {
       setInquiryStatus({
         text: error.response?.data?.message || copy.inquiryFallbackError,
@@ -92,6 +93,70 @@ export default function Home() {
             </div>
             <div className="hero-photo">
               <Image src={copy.images.hero} alt={copy.heroImageAlt} width={960} height={960} priority unoptimized={copy.images.hero.startsWith('http')} />
+            </div>
+          </div>
+        </section>
+
+        <section className="section academy-section" id="academy">
+          <div className="container">
+            <SectionHeading
+              eyebrow={copy.academyEyebrow}
+              title={copy.academyTitle}
+              description={copy.academyDescription}
+              gold
+            />
+            <p className="academy-schedule">{copy.academySchedule}</p>
+            <div className="academy-program-grid">
+              {copy.academyPrograms.map((program) => (
+                <article className="academy-program-card" key={program.title}>
+                  <i className="fa-solid fa-book-open" aria-hidden="true" />
+                  <h3>{program.title}</h3>
+                  <p>{program.description}</p>
+                </article>
+              ))}
+            </div>
+            <ul className="academy-highlights">
+              {copy.academyHighlights.map((highlight) => (
+                <li key={highlight}><i className="fa-solid fa-circle-check" />{highlight}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="section faculty-section" id="faculty">
+          <div className="container">
+            <div className="faculty-switch" role="group" aria-label="Choose faculty">
+              <button
+                className={activeFaculty === 'school' ? 'active' : ''}
+                type="button"
+                aria-pressed={activeFaculty === 'school'}
+                onClick={() => setActiveFaculty('school')}
+              >
+                {copy.facultySchoolLabel}
+              </button>
+              <button
+                className={activeFaculty === 'academy' ? 'active' : ''}
+                type="button"
+                aria-pressed={activeFaculty === 'academy'}
+                onClick={() => setActiveFaculty('academy')}
+              >
+                {copy.facultyAcademyLabel}
+              </button>
+            </div>
+            <SectionHeading eyebrow={copy.facultyEyebrow} title={copy.facultyTitle} description={copy.facultyDescription} />
+            <div className="faculty-grid">
+              {(activeFaculty === 'school' ? copy.schoolFaculty : copy.academyFaculty).map((member) => (
+                <article className="faculty-card" key={member.imageKey}>
+                  <Image
+                    src={copy.images[member.imageKey] || copy.images.about}
+                    alt={`${member.name}${member.designation ? `, ${member.designation}` : ''}`}
+                    width={640}
+                    height={720}
+                    unoptimized
+                  />
+                  <div><h3>{member.name}</h3>{member.designation && <p>{member.designation}</p>}</div>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -207,9 +272,7 @@ export default function Home() {
               <h2 className="section-title">{copy.admissionsTitle}</h2>
               <p className="section-copy">{copy.admissionsDescription}</p>
               <div className="contact-bullets">
-                <a className="contact-bullet" href={`https://wa.me/${copy.whatsappInternational}`} target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-whatsapp" /><span><strong>{copy.inquiryWhatsAppTitle}</strong><span>{copy.whatsapp}</span></span></a>
-                <a className="contact-bullet" href={`tel:${copy.phoneOneLink}`}><i className="fa-solid fa-phone" /><span><strong>{copy.admissionsOfficeLabel}</strong><span>{copy.phoneOne}</span></span></a>
-                <a className="contact-bullet" href={`tel:${copy.phoneTwoLink}`}><i className="fa-solid fa-phone" /><span><strong>{copy.campusAdminLabel}</strong><span>{copy.phoneTwo}</span></span></a>
+                <div className="contact-bullet manager-contact-bullet"><i className="fa-brands fa-whatsapp" /><span><strong>{copy.inquiryWhatsAppTitle}</strong><ManagementContactLinks contacts={settings.managementContacts} /></span></div>
                 <a className="contact-bullet" href={`mailto:${copy.email}`}><i className="fa-solid fa-envelope" /><span><strong>{copy.officialEmailLabel}</strong><span>{copy.email}</span></span></a>
               </div>
             </div>
@@ -218,8 +281,9 @@ export default function Home() {
               <form onSubmit={submitInquiry}>
                 <div className="form-grid">
                   <div className="field"><label htmlFor="parentName">{copy.inquiryNameLabel}</label><input id="parentName" name="name" placeholder={copy.inquiryPlaceholderName} value={inquiry.name} onChange={updateInquiry} required minLength={2} maxLength={100} /></div>
-                  <div className="field"><label htmlFor="inquiryEmail">{copy.inquiryEmailLabel}</label><input id="inquiryEmail" name="email" type="email" placeholder={copy.inquiryPlaceholderEmail} value={inquiry.email} onChange={updateInquiry} required maxLength={254} /></div>
-                  <div className="field"><label htmlFor="inquiryPhone">{copy.inquiryPhoneLabel}</label><input id="inquiryPhone" name="phone" inputMode="tel" placeholder={copy.inquiryPlaceholderPhone} value={inquiry.phone} onChange={updateInquiry} maxLength={30} /></div>
+                  <div className="field"><label htmlFor="inquiryFatherName">Father&apos;s Name *</label><input id="inquiryFatherName" name="fatherName" value={inquiry.fatherName} onChange={updateInquiry} required minLength={2} maxLength={100} /></div>
+                  <div className="field"><label htmlFor="inquiryEmail">Email (optional)</label><input id="inquiryEmail" name="email" type="email" placeholder={copy.inquiryPlaceholderEmail} value={inquiry.email} onChange={updateInquiry} maxLength={254} /></div>
+                  <div className="field"><label htmlFor="inquiryPhone">{copy.inquiryPhoneLabel} *</label><input id="inquiryPhone" name="phone" inputMode="tel" placeholder={copy.inquiryPlaceholderPhone} value={inquiry.phone} onChange={updateInquiry} required minLength={5} maxLength={30} /></div>
                   <div className="field"><label htmlFor="inquiryMessage">{copy.inquiryMessageLabel}</label><textarea id="inquiryMessage" name="message" placeholder={copy.inquiryPlaceholderMessage} value={inquiry.message} onChange={updateInquiry} required minLength={5} maxLength={2000} rows="1" /></div>
                 </div>
                 <button className="btn submit" disabled={sendingInquiry} type="submit"><i className="fa-brands fa-whatsapp" />{sendingInquiry ? copy.inquirySendingLabel : copy.inquirySubmitLabel}</button>
@@ -236,8 +300,7 @@ export default function Home() {
             <div className="contact-grid">
               <div className="contact-list">
                 <div className="contact-item"><i className="fa-solid fa-map-location-dot" /><div><h3>{copy.contactAddressLabel}</h3><p>{settings.liveLocation}</p></div></div>
-                <div className="contact-item"><i className="fa-brands fa-whatsapp" /><div><h3>{copy.contactWhatsAppLabel}</h3><a href={`https://wa.me/${copy.whatsappInternational}`} target="_blank" rel="noopener noreferrer">{copy.whatsapp}</a></div></div>
-                <div className="contact-item"><i className="fa-solid fa-phone" /><div><h3>{copy.contactPhoneLabel}</h3><p><a href={`tel:${copy.phoneOneLink}`}>{copy.phoneOne}</a> / <a href={`tel:${copy.phoneTwoLink}`}>{copy.phoneTwo}</a></p></div></div>
+                <div className="contact-item"><i className="fa-brands fa-whatsapp" /><div><h3>{copy.contactWhatsAppLabel} · {copy.contactPhoneLabel}</h3><ManagementContactLinks contacts={settings.managementContacts} /></div></div>
                 <div className="contact-item"><i className="fa-solid fa-envelope" /><div><h3>{copy.contactEmailLabel}</h3><a href={`mailto:${copy.email}`}>{copy.email}</a></div></div>
               </div>
               <div className="map-wrap">

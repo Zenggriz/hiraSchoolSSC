@@ -10,6 +10,7 @@ import { API_URL, getApiErrorMessage } from '../lib/api';
 const DEFAULT_SETTINGS = {
   liveLocation: 'https://maps.app.goo.gl/TFA4UbDuUjqmPwWf6',
   gallery: [],
+  managementContacts: [],
   galleryManaged: false,
   content: {},
   galleryLayout: { mode: 'grid', columns: 3 },
@@ -22,6 +23,23 @@ const SiteSettingsContext = createContext(DEFAULT_SETTINGS);
 
 export function useSiteSettings() {
   return useContext(SiteSettingsContext);
+}
+
+export function ManagementContactLinks({ contacts = [], className = '' }) {
+  return (
+    <span className={`manager-contact-links${className ? ` ${className}` : ''}`}>
+      {contacts.map((contact, index) => {
+        const internationalNumber = `92${contact.number.replace(/^0/, '').replace(/\D/g, '')}`;
+        return (
+          <span className="manager-contact-entry" key={contact.number}>
+            <a href={`https://wa.me/${internationalNumber}`} target="_blank" rel="noopener noreferrer">{contact.number}</a>
+            <span className="manager-contact-details">({contact.role}) {contact.name}</span>
+            {index < contacts.length - 1 && <span aria-hidden="true"> / </span>}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 function SchoolHeader({ settings }) {
@@ -62,8 +80,7 @@ function SchoolHeader({ settings }) {
         <div className="container topbar-inner">
           <div className="top-info">
             <span><i className="fa-solid fa-location-dot" />{settings.liveLocation}</span>
-            <span><i className="fa-brands fa-whatsapp" /><a href={`https://wa.me/${copy.whatsappInternational}`} target="_blank" rel="noopener noreferrer">{copy.whatsapp}</a></span>
-            <span><i className="fa-solid fa-phone" /><a href={`tel:${copy.phoneOneLink}`}>{copy.phoneOne}</a> / <a href={`tel:${copy.phoneTwoLink}`}>{copy.phoneTwo}</a></span>
+            <span className="top-manager-contacts"><i className="fa-brands fa-whatsapp" /><ManagementContactLinks contacts={settings.managementContacts} /></span>
             <span><i className="fa-solid fa-envelope" /><a href={`mailto:${copy.email}`}>{copy.email}</a></span>
           </div>
           <Link className="admission-pill" href="/admission">{copy.admissionBanner}</Link>
@@ -165,8 +182,7 @@ function SchoolFooter({ settings }) {
             <div className="footer-contact">
               <h3 className="footer-title">{copy.footerContactTitle}</h3>
               <p><i className="fa-solid fa-location-dot" />{settings.liveLocation}</p>
-              <p><i className="fa-brands fa-whatsapp" /><a href={`https://wa.me/${copy.whatsappInternational}`} target="_blank" rel="noopener noreferrer">{copy.whatsapp}</a></p>
-              <p><i className="fa-solid fa-phone" /><a href={`tel:${copy.phoneOneLink}`}>{copy.phoneOne}</a> / <a href={`tel:${copy.phoneTwoLink}`}>{copy.phoneTwo}</a></p>
+              <div className="footer-manager-contacts"><i className="fa-brands fa-whatsapp" /><ManagementContactLinks contacts={settings.managementContacts} /></div>
               <p><i className="fa-solid fa-envelope" /><a href={`mailto:${copy.email}`}>{copy.email}</a></p>
             </div>
           </div>
@@ -182,6 +198,17 @@ function SchoolFooter({ settings }) {
 
 export default function SiteLayout({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [pageLoaded, setPageLoaded] = useState(false);
+
+  useEffect(() => {
+    const markPageLoaded = () => setPageLoaded(true);
+    if (document.readyState === 'complete') {
+      const timer = window.setTimeout(markPageLoaded, 0);
+      return () => window.clearTimeout(timer);
+    }
+    window.addEventListener('load', markPageLoaded, { once: true });
+    return () => window.removeEventListener('load', markPageLoaded);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -219,7 +246,12 @@ export default function SiteLayout({ children }) {
         <meta name="theme-color" content="#18245C" />
         <meta name="robots" content="index, follow" />
       </Head>
-      {settings.loaded && settings.warning && (
+      {!settings.loaded || !pageLoaded ? (
+        <main className="brand-preloader" role="status" aria-label="Loading Hira School website">
+          <Image src="/images/hira-school-logo.png" alt="Hira School Shamim Saeed Campus" width={500} height={150} priority unoptimized />
+        </main>
+      ) : <>
+      {settings.warning && (
         <p role="status" style={{
           margin: 0,
           padding: '8px 16px',
@@ -231,9 +263,10 @@ export default function SiteLayout({ children }) {
           {settings.warning}
         </p>
       )}
-      {settings.loaded && !settings.error && <SchoolHeader settings={settings} />}
+      {!settings.error && <SchoolHeader settings={settings} />}
       {children}
-      {settings.loaded && !settings.error && <SchoolFooter settings={settings} />}
+      {!settings.error && <SchoolFooter settings={settings} />}
+      </>}
     </SiteSettingsContext.Provider>
   );
 }
